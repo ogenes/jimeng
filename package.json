@@ -1,0 +1,23 @@
+{
+  "name": "jimeng",
+  "version": "2.0.0",
+  "description": "即梦AI（字节跳动火山引擎）文生图Skill",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "text2image": "ts-node scripts/text2image.ts"
+  },
+  "keywords": ["jimeng", "volcengine", "ai", "image-generation", "skill"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "crypto-js": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/crypto-js": "^4.2.0",
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}
