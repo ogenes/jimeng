@@ -59,8 +59,8 @@ npx ts-node scripts/text2image.ts "prompt" [options]
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `prompt` | Image generation prompt (required) | - |
-| `--version` | API version: `v30`, `v31`, `v40` | `v40` |
-| `--ratio` | Aspect ratio: `1:1`, `9:16`, `16:9`, `3:4`, `4:3`, `2:3`, `3:2`, `1:2`, `2:1` | `1:1` |
+| `--version` | API version: `v30`, `v31`, `v40` | `v31` |
+| `--ratio` | Aspect ratio: `1:1`, `9:16`, `16:9`, `3:4`, `4:3`, `2:3`, `3:2`, `1:2`, `2:1` | `16:9` |
 | `--count` | Number of images (1–4) | `1` |
 | `--width` | Custom width (optional) | - |
 | `--height` | Custom height (optional) | - |
@@ -68,6 +68,7 @@ npx ts-node scripts/text2image.ts "prompt" [options]
 | `--seed` | Random seed (optional) | - |
 | `--output` | Image output directory | `./output` |
 | `--debug` | Enable debug mode | `false` |
+| `--no-download` | Do not download images, only return URLs | `false` |
 
 ## Workflow
 
