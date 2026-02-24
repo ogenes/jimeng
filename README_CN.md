@@ -32,6 +32,14 @@ npm install
 
 ### 2. 配置凭证
 
+| 变量名 | 是否必需 | 说明 |
+|--------|----------|------|
+| `VOLCENGINE_AK` | **必需** | 火山引擎 Access Key |
+| `VOLCENGINE_SK` | 条件必需 | 火山引擎 Secret Key（永久凭证必需） |
+| `VOLCENGINE_TOKEN` | 可选 | 安全令牌（临时凭证 STS 必需） |
+
+> **注意**：使用临时凭证（AKTP 开头）时，可以只使用 AK + Token，不需要 SK。
+
 ```bash
 export VOLCENGINE_AK="your-access-key"
 export VOLCENGINE_SK="your-secret-key"

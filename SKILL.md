@@ -10,9 +10,17 @@
 - 支持即梦AI文生图（v3.0 / v3.1 / v4.0）
 - 可配置宽高比、生成数量、自定义尺寸
 
-## 环境变量配置
+## 所需环境变量
 
-在使用前，需要设置以下环境变量：
+| 变量名 | 是否必需 | 说明 |
+|--------|----------|------|
+| `VOLCENGINE_AK` | **必需** | 火山引擎 Access Key |
+| `VOLCENGINE_SK` | 条件必需 | 火山引擎 Secret Key（永久凭证必需） |
+| `VOLCENGINE_TOKEN` | 可选 | 安全令牌（临时凭证 STS 必需） |
+
+> **注意**：使用临时凭证（AKTP 开头）时，可以只使用 AK + Token，不需要 SK。
+
+### 配置示例
 
 ```bash
 export VOLCENGINE_AK="your-access-key"

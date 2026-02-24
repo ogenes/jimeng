@@ -32,6 +32,14 @@ npm install
 
 ### 2. Configure credentials
 
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VOLCENGINE_AK` | **Required** | VolcEngine Access Key |
+| `VOLCENGINE_SK` | Conditional | VolcEngine Secret Key (required for permanent credentials) |
+| `VOLCENGINE_TOKEN` | Optional | Security Token (required for temporary STS credentials) |
+
+> **Note**: When using temporary credentials (starting with AKTP), you can use AK + Token without SK.
+
 ```bash
 export VOLCENGINE_AK="your-access-key"
 export VOLCENGINE_SK="your-secret-key"
