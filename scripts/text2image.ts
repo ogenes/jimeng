@@ -32,8 +32,7 @@ import {
   submitTask,
   waitForTask,
   getCredentials,
-  outputError,
-  downloadImage
+  outputError
 } from './common';
 
 interface Text2ImageOptions {
@@ -216,46 +215,33 @@ function getImagesInFolder(folderPath: string): string[] {
 }
 
 /**
- * 下载图片到指定文件夹
+ * 将 base64 数据解码保存为图片文件
+ * @returns 保存的图片文件路径列表
  */
-async function downloadImagesToFolder(
-  images: Array<{ url: string; width: number; height: number }>,
-  folderPath: string,
-  prompt: string
-): Promise<Array<{ url: string; localPath: string; width: number; height: number }>> {
-  const downloadedImages: Array<{ url: string; localPath: string; width: number; height: number }> = [];
-
+function saveBase64Images(folderPath: string, base64Data: string[]): string[] {
   // 确保输出目录存在
   if (!fs.existsSync(folderPath)) {
     fs.mkdirSync(folderPath, { recursive: true });
   }
 
-  for (let i = 0; i < images.length; i++) {
-    const img = images[i];
-    const ext = path.extname(new URL(img.url).pathname) || '.jpg';
-    const filename = `${i + 1}${ext}`;
+  const savedPaths: string[] = [];
+
+  for (let i = 0; i < base64Data.length; i++) {
+    const base64String = base64Data[i];
+    const filename = `${i + 1}.jpg`;
     const outputPath = path.join(folderPath, filename);
 
     try {
-      await downloadImage(img.url, outputPath);
-      downloadedImages.push({
-        url: img.url,
-        localPath: outputPath,
-        width: img.width,
-        height: img.height
-      });
+      // 解码 base64 数据并保存
+      const buffer = Buffer.from(base64String, 'base64');
+      fs.writeFileSync(outputPath, buffer);
+      savedPaths.push(outputPath);
     } catch (err: any) {
-      console.error(`  下载失败: ${err.message}`);
-      downloadedImages.push({
-        url: img.url,
-        localPath: '',
-        width: img.width,
-        height: img.height
-      });
+      console.error(`  保存图片失败: ${err.message}`);
     }
   }
 
-  return downloadedImages;
+  return savedPaths;
 }
 
 async function main(): Promise<void> {
@@ -271,24 +257,7 @@ async function main(): Promise<void> {
     };
     const reqKey = reqKeyMap[options.version];
 
-    console.error('=================================');
-    console.error('即梦AI - 文生图');
-    console.error('=================================');
-    console.error(`提示词: ${options.prompt}`);
-    console.error(`版本: ${options.version}`);
-    console.error(`宽高比: ${options.ratio}`);
-    console.error(`生成数量: ${options.count}`);
-    if (options.width && options.height) {
-      console.error(`指定尺寸: ${options.width}x${options.height}`);
-    }
-    console.error(`下载图片: ${options.download ? '是' : '否'}`);
-    if (options.download) {
-      console.error(`输出目录: ${path.resolve(options.outputDir)}`);
-    }
-    console.error('');
-
     // 构建请求体 - OpenAPI 格式
-    // 参考: {"force_single":false,"max_ratio":3,"min_ratio":0.33,"prompt":"...","req_key":"jimeng_t2i_v40","scale":0.5,"size":4194304}
     const ratioMap: Record<string, { min: number; max: number }> = {
       '1:1': { min: 0.95, max: 1.05 },
       '9:16': { min: 0.55, max: 0.65 },
@@ -316,90 +285,128 @@ async function main(): Promise<void> {
       body.seed = options.seed;
     }
 
-    if (options.debug) {
-      console.error('请求体:', JSON.stringify(body, null, 2));
-    }
+    // 计算任务文件夹路径
+    const taskFolderPath = getTaskFolderPath(options.prompt, options.outputDir);
 
-    // 1. 提交任务
-    console.error('步骤1: 提交任务...');
-    const { taskId, requestId } = await submitTask(accessKey, secretKey, reqKey, body, securityToken);
-    console.error(`任务提交成功，任务ID: ${taskId}`);
-    console.error('');
+    // 检查任务文件夹是否已存在
+    if (fs.existsSync(taskFolderPath)) {
+      // 已有任务 - 异步查询流程
+      console.error('发现已有任务，正在查询状态...');
 
-    // 2. 轮询等待任务完成
-    console.error('步骤2: 等待任务完成...');
-    const result = await waitForTask(accessKey, secretKey, reqKey, taskId, securityToken);
-
-    // 3. 提取图片URL
-    const images = result?.data?.pe_result?.map(img => ({
-      url: img.url,
-      width: img.width,
-      height: img.height
-    })) || [];
-
-    if (images.length === 0) {
-      throw new Error('任务完成但未返回图片数据');
-    }
-
-    // 4. 下载图片（如果需要）
-    const downloadedImages: Array<{ url: string; localPath: string; width: number; height: number }> = [];
-
-    if (options.download) {
-      console.error('');
-      console.error('步骤3: 下载图片...');
-
-      // 确保输出目录存在
-      if (!fs.existsSync(options.outputDir)) {
-        fs.mkdirSync(options.outputDir, { recursive: true });
+      const taskId = loadTaskId(taskFolderPath);
+      if (!taskId) {
+        throw new Error('任务文件夹存在但未找到 taskId.txt');
       }
 
-      // 生成文件名前缀（使用时间和提示词）
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-      const safePrompt = options.prompt.slice(0, 20).replace(/[^\w\u4e00-\u9fa5]/g, '_');
-      const filenamePrefix = `${timestamp}_${safePrompt}`;
+      // 检查是否已有图片文件
+      if (hasImages(taskFolderPath)) {
+        const existingImages = getImagesInFolder(taskFolderPath);
+        console.error(`任务已完成，图片已存在:`);
+        existingImages.forEach(img => console.error(`  - ${img}`));
 
-      for (let i = 0; i < images.length; i++) {
-        const img = images[i];
-        const ext = path.extname(new URL(img.url).pathname) || '.jpg';
-        const filename = `${filenamePrefix}_${i + 1}${ext}`;
-        const outputPath = path.join(options.outputDir, filename);
+        const successResult = {
+          success: true,
+          prompt: options.prompt,
+          version: options.version,
+          ratio: options.ratio,
+          count: options.count,
+          taskId,
+          images: existingImages,
+          outputDir: taskFolderPath
+        };
+        console.log(JSON.stringify(successResult, null, 2));
+        return;
+      }
 
-        try {
-          console.error(`  下载图片 ${i + 1}/${images.length}: ${filename}`);
-          await downloadImage(img.url, outputPath);
-          downloadedImages.push({
-            url: img.url,
-            localPath: path.resolve(outputPath),
-            width: img.width,
-            height: img.height
-          });
-        } catch (err: any) {
-          console.error(`  下载失败: ${err.message}`);
-          downloadedImages.push({
-            url: img.url,
-            localPath: '',
-            width: img.width,
-            height: img.height
-          });
+      // 无图片，查询任务状态
+      console.error(`任务ID: ${taskId}`);
+      console.error('正在查询任务状态...');
+
+      try {
+        const result = await waitForTask(accessKey, secretKey, reqKey, taskId, securityToken);
+
+        // 检查是否有 base64 图片数据
+        const base64Data = result?.data?.binary_data_base64;
+        if (base64Data && base64Data.length > 0) {
+          console.error(`任务完成，正在保存 ${base64Data.length} 张图片...`);
+          const savedPaths = saveBase64Images(taskFolderPath, base64Data);
+
+          console.error('任务已完成，图片保存路径:');
+          savedPaths.forEach(p => console.error(`  - ${p}`));
+
+          const successResult = {
+            success: true,
+            prompt: options.prompt,
+            version: options.version,
+            ratio: options.ratio,
+            count: options.count,
+            taskId,
+            images: savedPaths,
+            outputDir: taskFolderPath
+          };
+          console.log(JSON.stringify(successResult, null, 2));
+        } else {
+          console.error('任务完成但未返回图片数据');
+          const successResult = {
+            success: true,
+            prompt: options.prompt,
+            version: options.version,
+            ratio: options.ratio,
+            count: options.count,
+            taskId,
+            images: [],
+            outputDir: taskFolderPath
+          };
+          console.log(JSON.stringify(successResult, null, 2));
+        }
+      } catch (waitErr: any) {
+        if (waitErr.message?.includes('超时')) {
+          console.error(`任务未完成，TaskId: ${taskId}`);
+          process.exit(0);
+        } else {
+          throw waitErr;
         }
       }
-      console.error('');
+    } else {
+      // 新任务 - 提交但不等待
+      if (options.debug) {
+        console.error('请求体:', JSON.stringify(body, null, 2));
+      }
+
+      console.error('提交新任务...');
+      const { taskId, requestId } = await submitTask(accessKey, secretKey, reqKey, body, securityToken);
+
+      // 创建文件夹并保存任务信息
+      fs.mkdirSync(taskFolderPath, { recursive: true });
+
+      const paramData = {
+        prompt: options.prompt,
+        version: options.version,
+        ratio: options.ratio,
+        count: options.count,
+        req_key: reqKey,
+        timestamp: new Date().toISOString()
+      };
+
+      saveTaskInfo(taskFolderPath, paramData, { taskId, requestId }, taskId);
+
+      console.error(`任务已提交，TaskId: ${taskId}`);
+
+      // 如果需要等待任务完成（可以添加 --wait 选项）
+      // 但目前按照需求只提交不等待
+      const result = {
+        success: true,
+        submitted: true,
+        prompt: options.prompt,
+        version: options.version,
+        ratio: options.ratio,
+        count: options.count,
+        taskId,
+        folder: taskFolderPath,
+        message: '任务已提交，请稍后使用相同提示词查询结果'
+      };
+      console.log(JSON.stringify(result, null, 2));
     }
-
-    // 5. 输出结果
-    const successResult = {
-      success: true,
-      prompt: options.prompt,
-      version: options.version,
-      ratio: options.ratio,
-      count: options.count,
-      taskId,
-      images: options.download ? downloadedImages : images,
-      outputDir: options.download ? path.resolve(options.outputDir) : undefined,
-      usage: { requestId }
-    };
-
-    console.log(JSON.stringify(successResult, null, 2));
 
   } catch (err: any) {
     if (err.message === 'MISSING_CREDENTIALS') {

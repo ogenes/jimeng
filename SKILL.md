@@ -2,6 +2,14 @@
 
 基于火山引擎即梦AI的文生图能力，支持通过文本描述生成图片。
 
+## 功能特性
+
+- **执行过程存储**：使用 MD5(提示词) 作为文件夹名保存任务状态
+- **异步查询**：支持断点续传，避免重复提交相同任务
+- **Base64 图片处理**：直接从 API 响应中解码并保存图片
+- 支持即梦AI文生图（v3.0 / v3.1 / v4.0）
+- 可配置宽高比、生成数量、自定义尺寸
+
 ## 环境变量配置
 
 在使用前，需要设置以下环境变量：
@@ -24,6 +32,39 @@ export VOLCENGINE_TOKEN="your-security-token"
 ```bash
 cd /Users/ogenes/Data/www/jimeng
 npm install
+```
+
+## 工作流程
+
+### 首次执行（新任务）
+
+使用新提示词运行时，脚本将：
+1. 向 API 提交任务
+2. 使用 `md5(提示词)` 作为文件夹名创建目录
+3. 保存 `param.json`、`response.json` 和 `taskId.txt`
+4. 输出：`"任务已提交，TaskId: xxx"`
+
+```bash
+$ npx ts-node scripts/text2image.ts "一只可爱的猫咪"
+任务已提交，TaskId: 1234567890
+```
+
+### 后续执行（异步查询）
+
+使用相同提示词运行将查询已有任务：
+1. 如果图片已存在 → 立即返回图片路径
+2. 如果任务未完成 → 输出：`"任务未完成，TaskId: xxx"`
+3. 如果任务已完成 → 从 `binary_data_base64` 解码并保存图片
+
+```bash
+$ npx ts-node scripts/text2image.ts "一只可爱的猫咪"
+任务未完成，TaskId: 1234567890
+
+# 或者任务完成时：
+$ npx ts-node scripts/text2image.ts "一只可爱的猫咪"
+任务已完成，图片保存路径：
+  - ./output/<md5_hash>/1.jpg
+  - ./output/<md5_hash>/2.jpg
 ```
 
 ## 使用方法
@@ -55,13 +96,28 @@ npx ts-node scripts/text2image.ts "提示词" \
 | `--height` | 指定高度（可选） | - |
 | `--size` | 指定面积（可选，如 4194304 表示 2048x2048） | - |
 | `--seed` | 随机种子（可选） | - |
-| `--output` | 图片下载目录 | `./output` |
-| `--no-download` | 不下载图片，只返回URL | `false` |
+| `--output` | 图片输出目录 | `./output` |
 | `--debug` | 调试模式 | `false` |
 
 ## 输出格式
 
-### 成功响应
+### 任务已提交（首次运行）
+
+```json
+{
+  "success": true,
+  "submitted": true,
+  "prompt": "一只可爱的猫咪",
+  "version": "v40",
+  "ratio": "1:1",
+  "count": 1,
+  "taskId": "1234567890",
+  "folder": "./output/<md5_hash>",
+  "message": "任务已提交，请稍后使用相同提示词查询结果"
+}
+```
+
+### 任务已完成
 
 ```json
 {
@@ -70,19 +126,27 @@ npx ts-node scripts/text2image.ts "提示词" \
   "version": "v40",
   "ratio": "1:1",
   "count": 1,
-  "taskId": "task-xxx",
+  "taskId": "1234567890",
   "images": [
-    {
-      "url": "https://...",
-      "localPath": "/Users/ogenes/Data/www/jimeng/output/2026-02-24T09-34-43_一只可爱的猫咪_1.jpg",
-      "width": 1024,
-      "height": 1024
-    }
+    "./output/<md5_hash>/1.jpg",
+    "./output/<md5_hash>/2.jpg"
   ],
-  "outputDir": "/Users/ogenes/Data/www/jimeng/output",
-  "usage": {
-    "requestId": "req-xxx"
-  }
+  "outputDir": "./output/<md5_hash>"
+}
+```
+
+### 任务未完成
+
+```json
+{
+  "success": true,
+  "prompt": "一只可爱的猫咪",
+  "version": "v40",
+  "ratio": "1:1",
+  "count": 1,
+  "taskId": "1234567890",
+  "folder": "./output/<md5_hash>",
+  "message": "任务未完成，请稍后使用相同提示词查询结果"
 }
 ```
 
@@ -96,6 +160,17 @@ npx ts-node scripts/text2image.ts "提示词" \
     "message": "请设置环境变量 VOLCENGINE_AK 和 VOLCENGINE_SK"
   }
 }
+```
+
+## 文件夹结构
+
+```
+output/
+└── <md5(prompt)>/           # md5哈希作为文件夹名
+    ├── param.json           # 请求参数
+    ├── response.json        # API提交响应
+    ├── taskId.txt           # 任务ID
+    └── 1.jpg, 2.jpg, ...    # 生成的图片
 ```
 
 ## 示例
@@ -118,16 +193,10 @@ npx ts-node scripts/text2image.ts "未来科幻城市，霓虹灯光，赛博朋
 npx ts-node scripts/text2image.ts "抽象艺术" --width 2048 --height 1152
 ```
 
-### 自定义下载目录
+### 自定义输出目录
 
 ```bash
 npx ts-node scripts/text2image.ts "一只可爱的猫咪" --output ~/Pictures/jimeng
-```
-
-### 只获取URL不下载
-
-```bash
-npx ts-node scripts/text2image.ts "山水画" --no-download
 ```
 
 ## 版本说明

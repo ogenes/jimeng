@@ -11,8 +11,8 @@ import * as crypto from 'crypto';
 export const API_ENDPOINT = 'https://open.volcengineapi.com/';
 export const REGION = 'cn-beijing';
 export const SERVICE = 'cv';
-export const SUBMIT_ACTION = 'JimengT2IV40SubmitTask';
-export const QUERY_ACTION = 'JimengT2IV40QueryTask';
+export const SUBMIT_ACTION = 'JimengT2IV31SubmitTask';
+export const QUERY_ACTION = 'JimengT2IV31GetResult';
 export const VERSION = '2024-06-06';
 
 // 服务标识常量
@@ -333,6 +333,7 @@ export async function queryTask(
   const date = datetime.substring(0, 8);
 
   const body: Record<string, any> = {
+    req_key: reqKey,
     task_id: taskId
   };
 
