@@ -144,13 +144,39 @@ function md5Hash(str: string): string {
 }
 
 /**
+ * 清理路径，防止路径遍历攻击
+ * 移除 ../ 和 ./ 等危险路径段
+ */
+function sanitizePath(inputPath: string): string {
+  // 规范化路径
+  const normalized = path.normalize(inputPath);
+  // 移除任何以 .. 开头的路径（尝试跳出目录）
+  const cleaned = normalized.replace(/^(\.\.[\/\\])+/, '');
+  // 确保路径不以 / 或 \ 开头（绝对路径）
+  if (cleaned.startsWith('/') || cleaned.startsWith('\\')) {
+    throw new Error('不允许使用绝对路径');
+  }
+  return cleaned;
+}
+
+/**
  * 获取任务文件夹路径
  * 使用 md5(提示词) 作为子文件夹名
+ * 包含路径遍历防护
  */
 function getTaskFolderPath(prompt: string, baseOutputDir: string): string {
   const hash = md5Hash(prompt);
   const cwd = process.cwd();
-  return path.join(cwd, baseOutputDir, hash);
+  // 清理用户输入的路径，防止路径遍历
+  const safeOutputDir = sanitizePath(baseOutputDir);
+  const fullPath = path.join(cwd, safeOutputDir, hash);
+  // 验证最终路径确实在 cwd 之下（额外的安全检查）
+  const resolvedCwd = path.resolve(cwd);
+  const resolvedPath = path.resolve(fullPath);
+  if (!resolvedPath.startsWith(resolvedCwd + path.sep) && resolvedPath !== resolvedCwd) {
+    throw new Error('路径安全检查失败：输出目录必须在当前工作目录内');
+  }
+  return fullPath;
 }
 
 /**
