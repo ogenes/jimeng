@@ -1,13 +1,14 @@
 {
   "name": "jimeng",
-  "version": "1.2.0",
-  "description": "即梦AI（字节跳动火山引擎）文生图 工具 - 支持任务持久化和异步查询",
+  "version": "1.3.3",
+  "description": "即梦AI（字节跳动火山引擎）文生图/文生视频 工具 - 支持任务持久化和异步查询",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "text2image": "ts-node scripts/text2image.ts"
+    "text2image": "ts-node scripts/text2image.ts",
+    "text2video": "ts-node scripts/text2video.ts"
   },
-  "keywords": ["jimeng", "volcengine", "ai", "image-generation", "skill"],
+  "keywords": ["jimeng", "volcengine", "ai", "image-generation", "video-generation", "skill"],
   "author": "",
   "license": "MIT",
   "dependencies": {

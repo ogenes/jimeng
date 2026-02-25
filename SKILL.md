@@ -44,7 +44,7 @@ export VOLCENGINE_TOKEN="your-security-token"
 ## 安装依赖
 
 ```bash
-cd cd ~/.openclaw/workspace/skills/jimeng-ai 
+cd ~/.openclaw/workspace/skills/jimeng-ai
 npm install
 ```
 
@@ -279,11 +279,25 @@ npx ts-node scripts/text2video.ts "提示词" \
   "fps": 24,
   "taskId": "1234567890",
   "videoUrl": "https://...",
-  "videoPath": "./output/video/<md5_hash>/video.mp4",
-  "outputDir": "./output/video/<md5_hash>"
+  "data": {}
 }
 ```
 
+#### 任务未完成
+
+```json
+{
+  "success": true,
+  "pending": true,
+  "prompt": "元宵节灯笼",
+  "ratio": "9:16",
+  "duration": 5,
+  "fps": 24,
+  "taskId": "1234567890",
+  "status": "in_queue",
+  "message": "任务处理中，请稍后使用相同提示词查询结果"
+}
+```
 ### 视频文件夹结构
 
 ```
