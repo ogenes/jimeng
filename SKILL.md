@@ -1,11 +1,11 @@
 ---
 name: jimeng-ai
-description: 基于火山引擎即梦AI的文生图能力，支持通过文本描述生成图片。
+description: 基于火山引擎即梦AI的文生图/文生视频能力，支持通过文本描述生成图片和视频。
 ---
 
-# 即梦AI 文生图 Skill
+# 即梦AI 文生图/文生视频 Skill
 
-基于火山引擎即梦AI的文生图能力，支持通过文本描述生成图片。
+基于火山引擎即梦AI的文生图和文生视频能力，支持通过文本描述生成图片和视频。
 
 ## 功能特性
 
@@ -13,6 +13,7 @@ description: 基于火山引擎即梦AI的文生图能力，支持通过文本�
 - **异步查询**：支持断点续传，避免重复提交相同任务
 - **Base64 图片处理**：直接从 API 响应中解码并保存图片
 - 支持即梦AI文生图（v3.0 / v3.1 / v4.0）
+- 支持即梦AI文生视频（v3.0 1080P）
 - 可配置宽高比、生成数量、自定义尺寸
 
 ## 所需环境变量
@@ -219,6 +220,82 @@ npx ts-node scripts/text2image.ts "一只可爱的猫咪" --output ~/Pictures/ji
 - **v31**: 即梦3.1 改进版本
 - **v40**: 即梦4.0 最新版本（推荐）
 
+## 文生视频使用方法
+
+### 基础用法
+
+```bash
+npx ts-node scripts/text2video.ts "一只可爱的猫咪在草地上奔跑"
+```
+
+### 完整参数
+
+```bash
+npx ts-node scripts/text2video.ts "提示词" \
+  --ratio 9:16 \
+  --duration 5 \
+  --fps 24
+```
+
+### 参数说明
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `prompt` | 视频生成提示词（必填） | - |
+| `--ratio` | 宽高比: `16:9`, `4:3`, `1:1`, `3:4`, `9:16`, `21:9` | `9:16` |
+| `--duration` | 视频时长: `5` 或 `10` 秒 | `5` |
+| `--fps` | 帧率: `24` 或 `30` | `24` |
+| `--output` | 视频输出目录 | `./output` |
+| `--wait` | 等待任务完成 | `false` |
+| `--debug` | 调试模式 | `false` |
+| `--no-download` | 不下载视频，只返回URL | `false` |
+
+### 视频输出格式
+
+#### 任务已提交
+
+```json
+{
+  "success": true,
+  "submitted": true,
+  "prompt": "元宵节灯笼",
+  "ratio": "9:16",
+  "duration": 5,
+  "fps": 24,
+  "taskId": "1234567890",
+  "folder": "./output/video/<md5_hash>",
+  "message": "任务已提交，请稍后使用相同提示词查询结果"
+}
+```
+
+#### 任务已完成
+
+```json
+{
+  "success": true,
+  "prompt": "元宵节灯笼",
+  "ratio": "9:16",
+  "duration": 5,
+  "fps": 24,
+  "taskId": "1234567890",
+  "videoUrl": "https://...",
+  "videoPath": "./output/video/<md5_hash>/video.mp4",
+  "outputDir": "./output/video/<md5_hash>"
+}
+```
+
+### 视频文件夹结构
+
+```
+output/video/
+└── <md5(prompt)>/           # md5哈希作为文件夹名
+    ├── param.json           # 请求参数
+    ├── response.json        # API提交响应
+    ├── taskId.txt           # 任务ID
+    └── video.mp4            # 生成的视频
+```
+
 ## 参考文档
 
-- [火山引擎即梦AI文档](https://www.volcengine.com/docs/85621/1820192)
+- [火山引擎即梦AI文生图文档](https://www.volcengine.com/docs/85621/1820192)
+- [火山引擎即梦AI文生视频文档](https://www.volcengine.com/docs/85621/1792702)
