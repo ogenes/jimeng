@@ -1,12 +1,13 @@
-# 即梦AI - 文生图
+# 即梦AI - 文生图/文生视频
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-基于字节跳动火山引擎即梦AI的文生图 TypeScript CLI 工具。
+基于字节跳动火山引擎即梦AI的文生图和文生视频 TypeScript CLI 工具。
 
 ## 功能特性
 
-- 支持即梦AI文生图（v3.0 / v3.1 / v4.0）
+- **文生图**：支持即梦AI文生图（v3.0 / v3.1 / v4.0）
+- **文生视频**：支持即梦AI文生视频（v3.0 1080P）
 - **执行过程存储**：使用 MD5(提示词) 作为文件夹名保存任务状态
 - **异步查询**：支持断点续传，避免重复提交相同任务
 - **Base64 图片处理**：直接从 API 响应中解码并保存图片
@@ -52,11 +53,19 @@ export VOLCENGINE_TOKEN="your-security-token"
 
 ### 3. 运行
 
+**文生图：**
+
 ```bash
 npx ts-node scripts/text2image.ts "一只可爱的猫咪"
 ```
 
-## 使用方法
+**文生视频：**
+
+```bash
+npx ts-node scripts/text2video.ts "一只可爱的猫咪在草地上奔跑"
+```
+
+## 文生图使用方法
 
 ```bash
 npx ts-node scripts/text2image.ts "提示词" [选项]
@@ -78,7 +87,7 @@ npx ts-node scripts/text2image.ts "提示词" [选项]
 | `--debug` | 调试模式 | `false` |
 | `--no-download` | 不下载图片，只返回URL | `false` |
 
-## 工作流程
+## 文生图工作流程
 
 ### 首次执行（新任务）
 
@@ -202,6 +211,8 @@ npx ts-node scripts/text2image.ts "一只可爱的猫咪" --output ~/Pictures/ji
 
 ## 文件夹结构
 
+### 文生图输出
+
 ```
 output/
 └── <md5(prompt)>/           # md5哈希作为文件夹名
@@ -211,6 +222,83 @@ output/
     └── 1.jpg, 2.jpg, ...    # 生成的图片
 ```
 
+### 文生视频输出
+
+```
+output/video/
+└── <md5(prompt)>/           # md5哈希作为文件夹名
+    ├── param.json           # 请求参数
+    ├── response.json        # API提交响应
+    ├── taskId.txt           # 任务ID
+    └── video.mp4            # 生成的视频
+```
+
+## 文生视频使用方法
+
+```bash
+npx ts-node scripts/text2video.ts "提示词" [选项]
+```
+
+### 视频参数说明
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `prompt` | 视频生成提示词（必填） | - |
+| `--ratio` | 宽高比: `16:9`, `4:3`, `1:1`, `3:4`, `9:16`, `21:9` | `9:16` |
+| `--duration` | 视频时长: `5` 或 `10` 秒 | `5` |
+| `--fps` | 帧率: `24` 或 `30` | `24` |
+| `--output` | 视频输出目录 | `./output/video` |
+| `--wait` | 等待任务完成 | `false` |
+| `--debug` | 调试模式 | `false` |
+| `--no-download` | 不下载视频，只返回URL | `false` |
+
+### 视频使用示例
+
+```bash
+# 基础用法
+npx ts-node scripts/text2video.ts "一只可爱的猫咪在草地上奔跑"
+
+# 自定义宽高比和时长
+npx ts-node scripts/text2video.ts "未来科幻城市" --ratio 16:9 --duration 10
+
+# 等待任务完成
+npx ts-node scripts/text2video.ts "海浪拍打沙滩" --wait
+```
+
+### 视频输出格式
+
+#### 任务已提交
+
+```json
+{
+  "success": true,
+  "submitted": true,
+  "prompt": "一只可爱的猫咪在奔跑",
+  "ratio": "9:16",
+  "duration": 5,
+  "fps": 24,
+  "taskId": "1234567890",
+  "folder": "./output/video/<md5_hash>",
+  "message": "任务已提交，请稍后使用相同提示词查询结果"
+}
+```
+
+#### 任务已完成
+
+```json
+{
+  "success": true,
+  "prompt": "一只可爱的猫咪在奔跑",
+  "ratio": "9:16",
+  "duration": 5,
+  "fps": 24,
+  "taskId": "1234567890",
+  "videoUrl": "https://...",
+  "videoPath": "./output/video/<md5_hash>/video.mp4",
+  "outputDir": "./output/video/<md5_hash>"
+}
+```
+
 ## 项目结构
 
 ```
@@ -218,17 +306,22 @@ jimeng/
 ├── scripts/
 │   ├── common.ts          # 共享工具库：API签名、HTTP请求、凭证管理
 │   ├── text2image.ts      # 文生图 CLI 入口
+│   ├── text2video.ts      # 文生视频 CLI 入口
 │   └── debug-sign.ts      # 签名调试工具
 ├── dist/                  # TypeScript 编译输出
 ├── check_key.sh           # 凭证检查脚本
 ├── verify_auth.py         # Python 鉴权验证辅助
 ├── package.json
 ├── tsconfig.json
+├── skill.yaml             # Skill 配置文件
 ├── SKILL.md               # 使用指南（中文）
+├── readme_cn.md           # 中文 README
 └── README.md
 ```
 
 ## 支持的模型
+
+### 图片生成
 
 | 版本 | 模型标识 | 说明 |
 |------|----------|------|
@@ -236,14 +329,23 @@ jimeng/
 | `v31` | `jimeng_t2i_v31` | 即梦3.1 改进版本 |
 | `v40` | `jimeng_t2i_v40` | 即梦4.0 最新版本（推荐） |
 
+### 视频生成
+
+| 版本 | 模型标识 | 说明 |
+|------|----------|------|
+| `v30` | `jimeng_t2v_v30` | 即梦3.0 1080P 视频生成 |
+
 ## 开发
 
 ```bash
 # 编译 TypeScript
 npm run build
 
-# 使用 ts-node 直接运行
-npm run text2image -- "提示词"
+# 运行文生图
+npx ts-node scripts/text2image.ts "提示词"
+
+# 运行文生视频
+npx ts-node scripts/text2video.ts "提示词"
 ```
 
 ## 许可证
@@ -252,4 +354,5 @@ npm run text2image -- "提示词"
 
 ## 参考文档
 
-- [火山引擎即梦AI文档](https://www.volcengine.com/docs/85621/1820192)
+- [火山引擎即梦AI文生图文档](https://www.volcengine.com/docs/85621/1820192)
+- [火山引擎即梦AI文生视频文档](https://www.volcengine.com/docs/85621/1792702)
