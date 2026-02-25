@@ -271,14 +271,14 @@ async function main(): Promise<void> {
       '2:1': { width: 2880, height: 1440 }
     };
 
-    const ratioValue = ratioMap[options.ratio] || { width: 2560, height: 1440 };
+    const ratioValue = ratioMap[options.ratio] || { width: 1440, height: 2560 };
     const body: Record<string, any> = {
       req_key: reqKey,
       prompt: options.prompt,
       force_single: options.count === 1,
       count: options.count || 1,
-      width: ratioValue.width,
-      height: ratioValue.height,
+      width: options.width || ratioValue.width,
+      height: options.height || ratioValue.height,
       scale: 0.5
     };
 
