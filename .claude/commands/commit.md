@@ -5,6 +5,6 @@
 ## ClawHub 发布命令
 
 ```bash
-clawhub publish /Users/ogenes/Data/www/jimeng --slug jimeng-ai --name "Jimeng AI" --version <新版本号> --changelog "<变更说明>"
+clawhub publish /path/jimeng --slug jimeng-ai --name "Jimeng AI" --version <新版本号> --changelog "<变更说明>"
 
 ```

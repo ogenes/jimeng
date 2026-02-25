@@ -43,7 +43,7 @@ export VOLCENGINE_TOKEN="your-security-token"
 ## 安装依赖
 
 ```bash
-cd /Users/ogenes/Data/www/jimeng
+cd cd ~/.openclaw/workspace/skills/jimeng-ai 
 npm install
 ```
 
